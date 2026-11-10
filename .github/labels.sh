@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="uWaazy/Local-Achievements"
+REPO="uWaazy/Local-Achievements-Playnite"
 
 create() {
   gh label create "$1" --repo "$REPO" --color "$2" --description "$3" --force

@@ -46,7 +46,7 @@ namespace LocalAchievements.Services
     public class UpdateService
     {
         private const string Owner = "uWaazy";
-        private const string Repository = "Local-Achievements";
+        private const string Repository = "Local-Achievements-Playnite";
         private const long MaxPackageBytes = 25L * 1024 * 1024;
         private const long MaxJsonBytes = 2L * 1024 * 1024;
         private const int RequestTimeoutMs = 15000;

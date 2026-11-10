@@ -572,7 +572,7 @@ namespace LocalAchievements
 
                 if (open == System.Windows.MessageBoxResult.Yes)
                 {
-                    string url = string.IsNullOrEmpty(info.ReleaseUrl) ? "https://github.com/uWaazy/Local-Achievements/releases" : info.ReleaseUrl;
+                    string url = string.IsNullOrEmpty(info.ReleaseUrl) ? "https://github.com/uWaazy/Local-Achievements-Playnite/releases" : info.ReleaseUrl;
                     try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true }); }
                     catch (Exception ex) { AdvancedLogger.Log("[UPDATE] Could not open the release page: " + ex.Message); }
                 }
