@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LocalAchievements.Services
 {
@@ -53,7 +54,10 @@ namespace LocalAchievements.Services
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AdvancedLogger.Log($"[FAIL] Failed to parse Steam schema {Path.GetFileName(schemaPath)}: {ex.Message}");
+            }
             return map;
         }
 
@@ -147,7 +151,11 @@ namespace LocalAchievements.Services
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                string masked = Regex.Replace(Path.GetFileName(caminhoArquivo) ?? "", @"UserGameStats_\d+_", "UserGameStats_<account>_");
+                AdvancedLogger.Log($"[FAIL] Failed to extract achievements from {masked}: {ex.Message}");
+            }
             return results;
         }
 

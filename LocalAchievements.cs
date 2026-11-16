@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LocalAchievements
@@ -32,6 +33,7 @@ namespace LocalAchievements
 
         private readonly Dictionary<Guid, RestoredGameInfo> _pendingDisplay = new Dictionary<Guid, RestoredGameInfo>();
         private readonly object _pendingDisplayLock = new object();
+        private readonly CancellationTokenSource _disposeCts = new CancellationTokenSource();
         private bool _restartPromptOpen;
 
         private readonly Guid SteamPluginId = Guid.Parse("cb91dfc9-b977-43bf-8e70-55f46e410fab");
@@ -100,6 +102,13 @@ namespace LocalAchievements
 
         public override void Dispose()
         {
+            try
+            {
+                _disposeCts.Cancel();
+                _disposeCts.Dispose();
+            }
+            catch { }
+
             try
             {
                 PlayniteApi.Database.Games.ItemCollectionChanged -= Games_ItemCollectionChanged;
@@ -380,21 +389,25 @@ namespace LocalAchievements
                 AdvancedLogger.Log($"[FAIL] Pre-restart sync failed: {ex.Message}");
             }
 
-            string playniteExe = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+            var currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+            int pid = currentProcess.Id;
+            string playniteExe = currentProcess.MainModule.FileName;
+
+            string script = $"$p = Get-Process -Id {pid} -ErrorAction SilentlyContinue; " +
+                            "if ($p) { $p.WaitForExit(30000) | Out-Null }; " +
+                            "Start-Sleep -Milliseconds 500; " +
+                            $"Start-Process -FilePath '{playniteExe.Replace("'", "''")}'";
 
             System.Diagnostics.ProcessStartInfo restartInfo = new System.Diagnostics.ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                Arguments = $"/c timeout /t 3 /nobreak >nul & start \"\" \"{playniteExe}\"",
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -WindowStyle Hidden -Command \"{script}\"",
                 WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden,
                 CreateNoWindow = true
             };
             System.Diagnostics.Process.Start(restartInfo);
 
-            PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-            {
-                System.Windows.Application.Current.Shutdown();
-            });
+            RunOnUI(() => System.Windows.Application.Current.Shutdown());
         }
 
         private void HandlePostUpdate()
@@ -433,11 +446,16 @@ namespace LocalAchievements
         {
             if (_settingsVM.Settings.UpdatePromptMode == 2) return;
 
+            var token = _disposeCts.Token;
             Task.Run(async () =>
             {
-                await Task.Delay(15000);
-                StartUpdateCheck(false);
-            });
+                try
+                {
+                    await Task.Delay(15000, token);
+                    if (!token.IsCancellationRequested) StartUpdateCheck(false);
+                }
+                catch (OperationCanceledException) { }
+            }, token);
         }
 
         private void StartUpdateCheck(bool interactive)
@@ -732,24 +750,27 @@ namespace LocalAchievements
         {
             if (_syncService.IsSteamToolsGame(game))
             {
-                Tag steamToolsTag = PlayniteApi.Database.Tags.FirstOrDefault(t => t.Name == "Steam Tools");
-                if (steamToolsTag == null)
+                RunOnUI(() =>
                 {
-                    steamToolsTag = new Tag { Name = "Steam Tools" };
-                    PlayniteApi.Database.Tags.Add(steamToolsTag);
-                }
+                    Tag steamToolsTag = PlayniteApi.Database.Tags.FirstOrDefault(t => t.Name == "Steam Tools");
+                    if (steamToolsTag == null)
+                    {
+                        steamToolsTag = new Tag { Name = "Steam Tools" };
+                        PlayniteApi.Database.Tags.Add(steamToolsTag);
+                    }
 
-                if (game.TagIds == null)
-                {
-                    game.TagIds = new List<Guid>();
-                }
+                    if (game.TagIds == null)
+                    {
+                        game.TagIds = new List<Guid>();
+                    }
 
-                if (!game.TagIds.Contains(steamToolsTag.Id))
-                {
-                    game.TagIds.Add(steamToolsTag.Id);
-                    PlayniteApi.Database.Games.Update(game);
-                    AdvancedLogger.Log($"[TAG] Tag 'Steam Tools' adicionada automaticamente ao jogo {game.Name}.");
-                }
+                    if (!game.TagIds.Contains(steamToolsTag.Id))
+                    {
+                        game.TagIds.Add(steamToolsTag.Id);
+                        PlayniteApi.Database.Games.Update(game);
+                        AdvancedLogger.Log($"[TAG] Tag 'Steam Tools' adicionada automaticamente ao jogo {game.Name}.");
+                    }
+                });
             }
         }
 
@@ -767,32 +788,45 @@ namespace LocalAchievements
         {
             if (args.Game.PluginId == Guid.Empty && _syncService.IsSteamToolsGame(args.Game))
             {
+                var token = _disposeCts.Token;
                 Task.Run(async () =>
                 {
-                    await Task.Delay(3000);
-
-                    AdvancedLogger.Log($"[DISFARCE REMOVIDO] Injetando dados reais em {args.Game.Name}...");
-
-                    args.Game.PluginId = SteamPluginId;
-                    PlayniteApi.Database.Games.Update(args.Game);
-
-                    int count = _syncService.Sync(args.Game);
-
-                    if (count > 0)
+                    try
                     {
-                        MarkPendingDisplay(args.Game, count);
+                        await Task.Delay(3000, token);
+                        if (token.IsCancellationRequested) return;
 
-                        string notifText = string.Format(ResourceProvider.GetString("LOCLocalAchievementsTrackerNotification"), count, args.Game.Name);
+                        AdvancedLogger.Log($"[DISFARCE REMOVIDO] Injetando dados reais em {args.Game.Name}...");
 
-                        PlayniteApi.Notifications.Add(new NotificationMessage(
-                            Guid.NewGuid().ToString(),
-                            notifText,
-                            NotificationType.Info
-                        ));
+                        RunOnUI(() =>
+                        {
+                            args.Game.PluginId = SteamPluginId;
+                            PlayniteApi.Database.Games.Update(args.Game);
+                        });
 
-                        RefreshPlayniteUI(args.Game);
+                        int count = _syncService.Sync(args.Game);
+
+                        if (count > 0)
+                        {
+                            MarkPendingDisplay(args.Game, count);
+
+                            string notifText = string.Format(ResourceProvider.GetString("LOCLocalAchievementsTrackerNotification"), count, args.Game.Name);
+
+                            PlayniteApi.Notifications.Add(new NotificationMessage(
+                                Guid.NewGuid().ToString(),
+                                notifText,
+                                NotificationType.Info
+                            ));
+
+                            RefreshPlayniteUI(args.Game);
+                        }
                     }
-                });
+                    catch (OperationCanceledException) { }
+                    catch (Exception ex)
+                    {
+                        AdvancedLogger.Log($"[FAIL] OnGameStopped failed for {args.Game?.Name}: {ex.Message}");
+                    }
+                }, token);
             }
         }
 
@@ -807,11 +841,13 @@ namespace LocalAchievements
 
             if (!_settingsVM.Settings.EnableAutoSyncOnStartup) return;
 
+            var token = _disposeCts.Token;
             Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(8000);
+                    await Task.Delay(8000, token);
+                    if (token.IsCancellationRequested) return;
 
                     var steamGames = PlayniteApi.Database.Games
                         .Where(g => g.PluginId == SteamPluginId)
@@ -821,6 +857,8 @@ namespace LocalAchievements
 
                     foreach (var game in steamGames)
                     {
+                        if (token.IsCancellationRequested) return;
+
                         VerificarEAdicionarTagSteamTools(game);
 
                         if (_syncService.IsSteamToolsGame(game))
@@ -844,11 +882,12 @@ namespace LocalAchievements
                     var selected = PlayniteApi.MainView.SelectedGames?.FirstOrDefault();
                     if (selected != null) RefreshPlayniteUI(selected);
                 }
+                catch (OperationCanceledException) { }
                 catch (Exception ex)
                 {
                     logger.Error(ex, "Erro na sincronização automática.");
                 }
-            });
+            }, token);
         }
 
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
@@ -858,56 +897,79 @@ namespace LocalAchievements
             var added = e.AddedItems.Where(g => g.PluginId == SteamPluginId).ToList();
             if (added.Count == 0) return;
 
+            var token = _disposeCts.Token;
             Task.Run(async () =>
             {
-                await Task.Delay(3000);
-
-                foreach (var game in added)
+                try
                 {
-                    try
-                    {
-                        VerificarEAdicionarTagSteamTools(game);
+                    await Task.Delay(3000, token);
+                    if (token.IsCancellationRequested) return;
 
-                        if (_settingsVM.Settings.AutoSyncPlaytime
-                            && _syncService.IsSteamToolsGame(game)
-                            && _playtimeService.Sync(game) == PlaytimeSyncResult.Synced)
+                    foreach (var game in added)
+                    {
+                        if (token.IsCancellationRequested) return;
+
+                        try
                         {
-                            PlayniteApi.Notifications.Add(new NotificationMessage(
-                                Guid.NewGuid().ToString(),
-                                string.Format(ResourceProvider.GetString("LOCLocalAchievementsPlaytimeNotification"), game.Name, Math.Round(game.Playtime / 3600.0, 1)),
-                                NotificationType.Info));
+                            VerificarEAdicionarTagSteamTools(game);
+
+                            if (_settingsVM.Settings.AutoSyncPlaytime
+                                && _syncService.IsSteamToolsGame(game)
+                                && _playtimeService.Sync(game) == PlaytimeSyncResult.Synced)
+                            {
+                                PlayniteApi.Notifications.Add(new NotificationMessage(
+                                    Guid.NewGuid().ToString(),
+                                    string.Format(ResourceProvider.GetString("LOCLocalAchievementsPlaytimeNotification"), game.Name, Math.Round(game.Playtime / 3600.0, 1)),
+                                    NotificationType.Info));
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(ex, $"Erro ao processar jogo novo: {game?.Name}");
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        logger.Error(ex, $"Erro ao processar jogo novo: {game?.Name}");
-                    }
                 }
-            });
+                catch (OperationCanceledException) { }
+            }, token);
         }
 
         private void RefreshPlayniteUI(Game gameToRefresh)
         {
             if (gameToRefresh == null) return;
 
+            var token = _disposeCts.Token;
             Task.Run(async () =>
             {
-                PlayniteApi.MainView.UIDispatcher.Invoke(() =>
+                try
                 {
-                    var currentlySelected = PlayniteApi.MainView.SelectedGames?.ToList();
-                    if (currentlySelected != null && currentlySelected.Any(g => g.Id == gameToRefresh.Id))
+                    RunOnUI(() =>
                     {
-                        PlayniteApi.MainView.SelectGames(new List<Guid>());
-                    }
-                });
+                        var currentlySelected = PlayniteApi.MainView.SelectedGames?.ToList();
+                        if (currentlySelected != null && currentlySelected.Any(g => g.Id == gameToRefresh.Id))
+                        {
+                            PlayniteApi.MainView.SelectGames(new List<Guid>());
+                        }
+                    });
 
-                await Task.Delay(500);
+                    await Task.Delay(500, token);
+                    if (token.IsCancellationRequested) return;
 
-                PlayniteApi.MainView.UIDispatcher.Invoke(() =>
-                {
-                    PlayniteApi.MainView.SelectGames(new List<Guid> { gameToRefresh.Id });
-                });
-            });
+                    RunOnUI(() =>
+                    {
+                        PlayniteApi.MainView.SelectGames(new List<Guid> { gameToRefresh.Id });
+                    });
+                }
+                catch (OperationCanceledException) { }
+            }, token);
+        }
+
+        private void RunOnUI(Action action)
+        {
+            var dispatcher = PlayniteApi?.MainView?.UIDispatcher;
+            if (dispatcher == null || dispatcher.CheckAccess())
+                action();
+            else
+                dispatcher.Invoke(action);
         }
 
         public override ISettings GetSettings(bool firstRunSettings) { return _settingsVM; }

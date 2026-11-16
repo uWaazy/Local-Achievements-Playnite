@@ -2,7 +2,6 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
-    <sys:String x:Key="LOCLocalAchievementsSyncMenu">Sync Local Achievements</sys:String>
     <sys:String x:Key="LOCLocalAchievementsReadingData">Reading local data: {0}...</sys:String>
     <sys:String x:Key="LOCLocalAchievementsSyncProgress">Synchronizing local achievements...</sys:String>
     <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsRestartPrompt">{0} local achievements have been synchronized!&#x0a;&#x0a;Since the visual interface requires a reload, do you want to restart Playnite now to apply the changes?</sys:String>
@@ -49,10 +48,8 @@
     <sys:String x:Key="LOCLocalAchievementsSettingsCheckUpdates">Check for updates now</sys:String>
 
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoReapply">Restore achievements automatically when SuccessStory refreshes its data</sys:String>
-    <sys:String x:Key="LOCLocalAchievementsReappliedNotification">{0}: {1} achievements restored in SuccessStory data. Click to restart Playnite and apply.</sys:String>
     <sys:String x:Key="LOCLocalAchievementsReappliedNotificationSingle">{0}: {1} achievements restored in SuccessStory data. Click to restart Playnite and apply.</sys:String>
     <sys:String x:Key="LOCLocalAchievementsReappliedNotificationMultiple">{0} achievements restored in SuccessStory data for: {1}. Click to restart Playnite and apply.</sys:String>
-    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsReappliedRestartPrompt">Achievements were restored in the SuccessStory data for:&#x0a;{0}&#x0a;&#x0a;SuccessStory only shows them after Playnite restarts. Restart now?</sys:String>
     <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsReappliedPromptSingle">{0} achievements were found and restored for {1}!&#x0a;&#x0a;SuccessStory requires restarting Playnite to display the achievements in the interface.&#x0a;&#x0a;Do you want to restart Playnite now to apply the changes?</sys:String>
     <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsReappliedPromptMultiple">Achievements were found and restored for the following games:&#x0a;{0}&#x0a;&#x0a;Total restored achievements: {1}.&#x0a;SuccessStory requires restarting Playnite to display the achievements in the interface.&#x0a;&#x0a;Do you want to restart Playnite now to apply the changes?</sys:String>
     <sys:String x:Key="LOCLocalAchievementsAchievementCount">{0} achievements</sys:String>

@@ -46,26 +46,41 @@ namespace LocalAchievements.Services
         }
 
         private static readonly Dictionary<string, OwnWrite> ownWrites = new Dictionary<string, OwnWrite>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> activeOwnWrites = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly object ownWritesLock = new object();
 
         public string SuccessStoryDirectory => Path.Combine(_api.Paths.ExtensionsDataPath, SSGuid, "SuccessStory");
 
-        private static void RecordOwnWrite(string path)
+        private static void BeginOwnWrite(string path)
         {
-            try
+            lock (ownWritesLock) { activeOwnWrites.Add(path); }
+        }
+
+        private static void EndOwnWrite(string path)
+        {
+            DateTime written = DateTime.MinValue;
+            try { written = File.GetLastWriteTimeUtc(path); } catch { }
+
+            lock (ownWritesLock)
             {
-                DateTime written = File.GetLastWriteTimeUtc(path);
-                lock (ownWritesLock) { ownWrites[path] = new OwnWrite { FileTime = written, At = DateTime.UtcNow }; }
+                if (written != DateTime.MinValue)
+                {
+                    ownWrites[path] = new OwnWrite { FileTime = written, At = DateTime.UtcNow };
+                }
+                activeOwnWrites.Remove(path);
             }
-            catch { }
         }
 
         public static bool IsOwnWrite(string path)
         {
             try
             {
-                DateTime current = File.GetLastWriteTimeUtc(path);
-                lock (ownWritesLock) { return ownWrites.TryGetValue(path, out OwnWrite recorded) && recorded.FileTime == current; }
+                lock (ownWritesLock)
+                {
+                    if (activeOwnWrites.Contains(path)) return true;
+                    DateTime current = File.GetLastWriteTimeUtc(path);
+                    return ownWrites.TryGetValue(path, out OwnWrite recorded) && recorded.FileTime == current;
+                }
             }
             catch { return false; }
         }
@@ -352,8 +367,15 @@ namespace LocalAchievements.Services
 
                 if (updated > 0 || builtFromSchema)
                 {
-                    File.WriteAllText(jsonPath, JsonConvert.SerializeObject(db, Formatting.Indented));
-                    RecordOwnWrite(jsonPath);
+                    BeginOwnWrite(jsonPath);
+                    try
+                    {
+                        File.WriteAllText(jsonPath, JsonConvert.SerializeObject(db, Formatting.Indented));
+                    }
+                    finally
+                    {
+                        EndOwnWrite(jsonPath);
+                    }
                     if (updated <= 10)
                         foreach (var m in matches) AdvancedLogger.Log($"[MATCH] {game.Name}: {m}");
                     AdvancedLogger.Log($"[OK] {game.Name}: {updated} achievements injected into SuccessStory.");

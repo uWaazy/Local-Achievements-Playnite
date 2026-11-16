@@ -75,14 +75,17 @@ namespace LocalAchievements.Services
                 ulong steamSeconds = minutes * 60UL;
                 if (steamSeconds <= game.Playtime) return PlaytimeSyncResult.SkippedNotHigher;
 
-                ulong old = game.Playtime;
-                game.Playtime = steamSeconds;
-                if (mine.LastPlayed.HasValue && (!game.LastActivity.HasValue || game.LastActivity.Value < mine.LastPlayed.Value))
-                    game.LastActivity = mine.LastPlayed.Value;
+                _api.MainView.UIDispatcher.Invoke(() =>
+                {
+                    ulong old = game.Playtime;
+                    game.Playtime = steamSeconds;
+                    if (mine.LastPlayed.HasValue && (!game.LastActivity.HasValue || game.LastActivity.Value < mine.LastPlayed.Value))
+                        game.LastActivity = mine.LastPlayed.Value;
 
-                _api.Database.Games.Update(game);
+                    _api.Database.Games.Update(game);
 
-                AdvancedLogger.Log($"[HORAS] {game.Name}: {old / 60} min -> {minutes} min (Steam era maior).");
+                    AdvancedLogger.Log($"[HORAS] {game.Name}: {old / 60} min -> {minutes} min (Steam era maior).");
+                });
                 return PlaytimeSyncResult.Synced;
             }
             catch (Exception ex)
@@ -107,12 +110,15 @@ namespace LocalAchievements.Services
                 var other = ReadAppTime(userdata, id, game.GameId);
                 if (other == null || other.Minutes == 0 || other.Minutes * 60UL != game.Playtime) continue;
 
-                ulong old = game.Playtime;
-                game.Playtime = mineSeconds;
-                game.LastActivity = mine?.LastPlayed;
-                _api.Database.Games.Update(game);
+                _api.MainView.UIDispatcher.Invoke(() =>
+                {
+                    ulong old = game.Playtime;
+                    game.Playtime = mineSeconds;
+                    game.LastActivity = mine?.LastPlayed;
+                    _api.Database.Games.Update(game);
 
-                AdvancedLogger.Log($"[HORAS] {game.Name}: {old / 60} min came from another Steam account on this PC; reset to {mineSeconds / 60} min (your account).");
+                    AdvancedLogger.Log($"[HORAS] {game.Name}: {old / 60} min came from another Steam account on this PC; reset to {mineSeconds / 60} min (your account).");
+                });
                 return true;
             }
 

@@ -203,8 +203,24 @@ namespace LocalAchievements.Services
             if (string.IsNullOrWhiteSpace(body)) return "";
 
             string text = body.Replace("\r\n", "\n");
+            var whatsChangedMatch = Regex.Match(text, @"(?im)^#{2,3}\s*What's Changed\s*$");
+
+            if (whatsChangedMatch.Success)
+            {
+                string before = text.Substring(0, whatsChangedMatch.Index).Trim();
+                if (!string.IsNullOrEmpty(before))
+                {
+                    text = before;
+                }
+                else
+                {
+                    text = text.Substring(whatsChangedMatch.Index + whatsChangedMatch.Length);
+                    text = Regex.Replace(text, @"\s+in\s+https?://\S+", "");
+                }
+            }
+
             int cut = text.Length;
-            foreach (string marker in new[] { "### What's Changed", "### Security", "**Full Changelog**" })
+            foreach (string marker in new[] { "### Security", "**Full Changelog**", "SHA-256:" })
             {
                 int index = text.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
                 if (index >= 0 && index < cut) cut = index;
@@ -212,7 +228,7 @@ namespace LocalAchievements.Services
 
             text = text.Substring(0, cut).Trim();
             text = text.Replace("**", "").Replace("`", "");
-            text = Regex.Replace(text, @"^###\s*", "", RegexOptions.Multiline);
+            text = Regex.Replace(text, @"^#{1,3}\s*", "", RegexOptions.Multiline);
             text = Regex.Replace(text, @"\n{3,}", "\n\n");
 
             if (text.Length > MaxNotesLength)
