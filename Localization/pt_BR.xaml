@@ -15,10 +15,28 @@
     <sys:String x:Key="LOCLocalAchievementsPlaytimeProgress">Sincronizando horas jogadas...</sys:String>
     <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsPlaytimeResult">Horas atualizadas pela Steam: {0}&#x0a;Ignorados (Playnite já tem tempo igual ou maior): {1}&#x0a;Sem horas na Steam: {2}</sys:String>
     <sys:String x:Key="LOCLocalAchievementsPlaytimeTitle">Local Achievements - Horas</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeMenu">Editar Horas na Steam...</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimePrompt">Definir tempo de jogo na Steam para {0}:</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeHoursLabel">Horas:</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeMinutesLabel">Minutos (0–59):</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeSave">Salvar</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeCancel">Cancelar</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeInvalid">Valor inválido. Digite números inteiros válidos (horas ≥ 0, minutos entre 0 e 59).</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeDone">Tempo de jogo de {0} atualizado para {1}h {2:00}m ({3} min) na Steam e no Playnite.</sys:String>
+    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsEditPlaytimeRestartSteam">&#x0a;&#x0a;A Steam está aberta no momento. Reinicie a Steam para ela ler o novo tempo (fechar a Steam normalmente pode sobrescrever o localconfig.vdf).</sys:String>
+    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsEditPlaytimeRestartSteamPrompt">A Steam está aberta no momento. Para evitar que a Steam sobrescreva a alteração e já aplicar o novo tempo agora, é recomendado fechar a Steam antes de salvar e reabri-la em seguida.&#x0a;&#x0a;Reiniciar a Steam automaticamente agora?</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeGameRunning">Há um jogo em execução. Feche-o antes de editar as horas na Steam.</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeRestartingSteam">Fechando a Steam, salvando as horas e reabrindo a Steam...</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeFailed">Não foi possível atualizar as horas na Steam: {0}</sys:String>
 
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoStartup">Sincronizar conquistas automaticamente ao iniciar o Playnite</sys:String>
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoPlaytime">Atualizar horas pela Steam automaticamente (jogos novos e ao iniciar)</sys:String>
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoPlaytimeHint">Para jogos do Steam Tools / Lua Tools: se a Steam tiver mais horas que o Playnite, o Playnite passa a usar o valor da Steam. Se o Playnite tiver igual ou mais, nada muda.</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsSettingsSteamPlaytimeEditor">Ativar opções de editar horas na Steam no menu do jogo (Editar horas / Enviar horas do Playnite para a Steam)</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsSettingsSteamPlaytimeEditorHint">Opcional: mostra opções no botão direito para editar o tempo no localconfig.vdf da Steam ou enviar as horas do Playnite para a Steam em jogos Steam Tools / Lua Tools / GreenLuma.</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsPushPlaytimeMenu">Enviar Horas do Playnite para a Steam</sys:String>
+    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsPushPlaytimeConfirm">Enviar o tempo do Playnite ({1}h {2:00}m / {3} min) para a Steam em {0}?</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsPushPlaytimeNotSteamTools">{0} não é um jogo Steam Tools / Lua Tools / GreenLuma (arquivo .lua não encontrado em stplug-in).</sys:String>
     <sys:String x:Key="LOCLocalAchievementsPlaytimeNotification">{0}: {1}h de tempo de jogo importadas da Steam.</sys:String>
 
     <sys:String x:Key="LOCLocalAchievementsSettingsSubtitle">Extensão para o SuccessStory</sys:String>

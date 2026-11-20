@@ -15,10 +15,28 @@
     <sys:String x:Key="LOCLocalAchievementsPlaytimeProgress">Syncing playtime...</sys:String>
     <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsPlaytimeResult">Playtime updated from Steam: {0}&#x0a;Skipped (Playnite already has equal or more time): {1}&#x0a;No Steam playtime found: {2}</sys:String>
     <sys:String x:Key="LOCLocalAchievementsPlaytimeTitle">Local Achievements - Playtime</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeMenu">Edit Steam Playtime...</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimePrompt">Set Steam playtime for {0}:</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeHoursLabel">Hours:</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeMinutesLabel">Minutes (0–59):</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeSave">Save</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeCancel">Cancel</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeInvalid">Invalid value. Enter non-negative whole numbers (hours ≥ 0, minutes 0–59).</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeDone">Playtime for {0} updated to {1}h {2:00}m ({3} min) in Steam and Playnite.</sys:String>
+    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsEditPlaytimeRestartSteam">&#x0a;&#x0a;Steam is currently running. Restart Steam so it reads the updated playtime (closing Steam normally may overwrite localconfig.vdf).</sys:String>
+    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsEditPlaytimeRestartSteamPrompt">Steam is currently running. To prevent Steam from overwriting the change and to apply the new playtime right away, Steam should be closed before saving and reopened afterwards.&#x0a;&#x0a;Restart Steam automatically now?</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeGameRunning">A game is currently running. Close it before editing Steam playtime.</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeRestartingSteam">Closing Steam, saving playtime, and reopening Steam...</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsEditPlaytimeFailed">Could not update Steam playtime: {0}</sys:String>
 
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoStartup">Sync achievements automatically when Playnite starts</sys:String>
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoPlaytime">Update playtime from Steam automatically (new games and startup)</sys:String>
     <sys:String x:Key="LOCLocalAchievementsSettingsAutoPlaytimeHint">For Steam Tools / Lua Tools games: if Steam has more playtime than Playnite, Playnite is updated to the Steam value. If Playnite has equal or more, nothing changes.</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsSettingsSteamPlaytimeEditor">Enable Steam playtime editing options in game menu (Edit hours / Send Playnite hours to Steam)</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsSettingsSteamPlaytimeEditorHint">Optional: shows right-click options to edit Steam localconfig.vdf playtime directly or send Playnite's playtime to Steam for Steam Tools / Lua Tools / GreenLuma games.</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsPushPlaytimeMenu">Send Playnite Playtime to Steam</sys:String>
+    <sys:String xml:space="preserve" x:Key="LOCLocalAchievementsPushPlaytimeConfirm">Send Playnite playtime ({1}h {2:00}m / {3} min) to Steam for {0}?</sys:String>
+    <sys:String x:Key="LOCLocalAchievementsPushPlaytimeNotSteamTools">{0} is not a Steam Tools / Lua Tools / GreenLuma game (no stplug-in .lua file found).</sys:String>
     <sys:String x:Key="LOCLocalAchievementsPlaytimeNotification">{0}: {1}h of playtime imported from Steam.</sys:String>
 
     <sys:String x:Key="LOCLocalAchievementsSettingsSubtitle">Extension for SuccessStory</sys:String>

@@ -1,6 +1,14 @@
 # Local Achievements (Steam Tools Tracker)
 
-A generic Playnite plugin designed to synchronize local Steam achievements and inject them seamlessly into the SuccessStory plugin database. This tool is built specifically for environments utilizing local `.lua` and `.bin` files (Steam Tools).
+A generic Playnite plugin designed to synchronize local Steam achievements and inject them seamlessly into the SuccessStory plugin database. This tool is built specifically for environments utilizing local `.lua` and `.bin` files (**Steam Tools**, **Lua Tools**, and **GreenLuma** setups using `stplug-in`).
+
+## Why is this plugin not on the official Playnite Add-on Store?
+
+A submission to the official Playnite Add-on Database ([`JosefNemec/PlayniteAddonDatabase#539`](https://github.com/JosefNemec/PlayniteAddonDatabase/pull/539)) was closed by Playnite's creator (Josef Nemec) with the following note:
+
+> *"This is going to be a no go for the addon DB since it's integration for a tool designed for piracy."*
+
+Because of that, **Local Achievements** is distributed exclusively through this GitHub repository and includes a built-in auto-updater that checks GitHub Releases directly.
 
 ## Features
 

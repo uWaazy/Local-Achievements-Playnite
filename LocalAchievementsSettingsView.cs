@@ -46,6 +46,18 @@ namespace LocalAchievements
             };
             hint.SetResourceReference(TextBlock.TextProperty, "LOCLocalAchievementsSettingsAutoPlaytimeHint");
 
+            var steamPlaytimeEditor = new CheckBox { Margin = new Thickness(0, 14, 0, 0) };
+            steamPlaytimeEditor.SetResourceReference(ContentControl.ContentProperty, "LOCLocalAchievementsSettingsSteamPlaytimeEditor");
+            steamPlaytimeEditor.SetBinding(CheckBox.IsCheckedProperty, new Binding("Settings.EnableSteamPlaytimeEditor"));
+
+            var steamPlaytimeEditorHint = new TextBlock
+            {
+                Margin = new Thickness(0, 6, 0, 0),
+                Opacity = 0.7,
+                TextWrapping = TextWrapping.Wrap
+            };
+            steamPlaytimeEditorHint.SetResourceReference(TextBlock.TextProperty, "LOCLocalAchievementsSettingsSteamPlaytimeEditorHint");
+
             var openLog = new Button
             {
                 Margin = new Thickness(0, 20, 0, 0),
@@ -87,13 +99,19 @@ namespace LocalAchievements
             panel.Children.Add(autoStartup);
             panel.Children.Add(autoPlaytime);
             panel.Children.Add(hint);
+            panel.Children.Add(steamPlaytimeEditor);
+            panel.Children.Add(steamPlaytimeEditorHint);
             panel.Children.Add(autoReapply);
             panel.Children.Add(openLog);
             panel.Children.Add(updateLabel);
             panel.Children.Add(updateMode);
             panel.Children.Add(checkUpdates);
 
-            Content = panel;
+            Content = new ScrollViewer
+            {
+                Content = panel,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+            };
         }
     }
 }

@@ -8,6 +8,7 @@ namespace LocalAchievements
     {
         private bool enableAutoSyncOnStartup = true;
         private bool autoSyncPlaytime = true;
+        private bool enableSteamPlaytimeEditor = false;
         private bool autoReapplyAchievements = true;
         private int updatePromptMode = 0;
         private string updateFeedUrl = string.Empty;
@@ -15,6 +16,7 @@ namespace LocalAchievements
 
         public bool EnableAutoSyncOnStartup { get => enableAutoSyncOnStartup; set => SetValue(ref enableAutoSyncOnStartup, value); }
         public bool AutoSyncPlaytime { get => autoSyncPlaytime; set => SetValue(ref autoSyncPlaytime, value); }
+        public bool EnableSteamPlaytimeEditor { get => enableSteamPlaytimeEditor; set => SetValue(ref enableSteamPlaytimeEditor, value); }
         public bool AutoReapplyAchievements { get => autoReapplyAchievements; set => SetValue(ref autoReapplyAchievements, value); }
         public int UpdatePromptMode { get => updatePromptMode; set => SetValue(ref updatePromptMode, value); }
         public string UpdateFeedUrl { get => updateFeedUrl; set => SetValue(ref updateFeedUrl, value); }

@@ -71,6 +71,25 @@ namespace LocalAchievements
                 Action = (context) => SyncPlaytimeFromMenu(context)
             };
 
+            if (_settingsVM.Settings.EnableSteamPlaytimeEditor)
+            {
+                yield return new GameMenuItem
+                {
+                    MenuSection = section,
+                    Description = ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeMenu"),
+                    Icon = icon,
+                    Action = (context) => EditPlaytimeFromMenu(context)
+                };
+
+                yield return new GameMenuItem
+                {
+                    MenuSection = section,
+                    Description = ResourceProvider.GetString("LOCLocalAchievementsPushPlaytimeMenu"),
+                    Icon = icon,
+                    Action = (context) => PushPlaytimeToSteamFromMenu(context)
+                };
+            }
+
             yield return new GameMenuItem
             {
                 MenuSection = section,
@@ -638,6 +657,233 @@ namespace LocalAchievements
             PlayniteApi.Dialogs.ShowMessage(
                 string.Format(ResourceProvider.GetString("LOCLocalAchievementsPlaytimeResult"), synced, skipped, none),
                 ResourceProvider.GetString("LOCLocalAchievementsPlaytimeTitle"));
+        }
+
+        private void EditPlaytimeFromMenu(GameMenuItemActionArgs context)
+        {
+            var game = context.Games.FirstOrDefault();
+            if (game == null || game.PluginId != SteamPluginId || string.IsNullOrEmpty(game.GameId)) return;
+
+            string title = ResourceProvider.GetString("LOCLocalAchievementsPlaytimeTitle");
+            ulong currentMinutes = _playtimeService.GetSteamPlaytimeMinutes(game) ?? (game.Playtime / 60UL);
+
+            if (!PromptHoursMinutesDialog(game.Name, title, currentMinutes, out ulong totalMinutes))
+                return;
+
+            ApplyPlaytimeToSteam(game, totalMinutes, title);
+        }
+
+        private void PushPlaytimeToSteamFromMenu(GameMenuItemActionArgs context)
+        {
+            var game = context.Games.FirstOrDefault();
+            if (game == null || game.PluginId != SteamPluginId || string.IsNullOrEmpty(game.GameId)) return;
+
+            string title = ResourceProvider.GetString("LOCLocalAchievementsPlaytimeTitle");
+
+            if (!_syncService.IsSteamToolsGame(game))
+            {
+                PlayniteApi.Dialogs.ShowMessage(
+                    string.Format(ResourceProvider.GetString("LOCLocalAchievementsPushPlaytimeNotSteamTools"), game.Name),
+                    title);
+                return;
+            }
+
+            ulong totalMinutes = (ulong)Math.Round(game.Playtime / 60.0, MidpointRounding.AwayFromZero);
+            ulong hours = totalMinutes / 60UL;
+            ulong mins = totalMinutes % 60UL;
+
+            var confirm = PlayniteApi.Dialogs.ShowMessage(
+                string.Format(ResourceProvider.GetString("LOCLocalAchievementsPushPlaytimeConfirm"), game.Name, hours, mins, totalMinutes),
+                title,
+                System.Windows.MessageBoxButton.YesNo);
+
+            if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+            ApplyPlaytimeToSteam(game, totalMinutes, title);
+        }
+
+        private void ApplyPlaytimeToSteam(Game game, ulong totalMinutes, string title)
+        {
+            if (PlayniteApi.Database.Games.Any(g => g.IsRunning))
+            {
+                PlayniteApi.Dialogs.ShowMessage(ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeGameRunning"), title);
+                return;
+            }
+
+            bool restartSteam = false;
+            if (_playtimeService.IsSteamRunning())
+            {
+                var choice = PlayniteApi.Dialogs.ShowMessage(
+                    ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeRestartSteamPrompt"),
+                    title,
+                    System.Windows.MessageBoxButton.YesNoCancel);
+
+                if (choice == System.Windows.MessageBoxResult.Cancel) return;
+                restartSteam = choice == System.Windows.MessageBoxResult.Yes;
+            }
+
+            bool ok = false;
+            string error = null;
+            bool steamStillRunning = false;
+
+            if (restartSteam)
+            {
+                PlayniteApi.Dialogs.ActivateGlobalProgress((progress) =>
+                {
+                    ok = _playtimeService.RestartSteamAndApply(game, totalMinutes, out error);
+                }, new GlobalProgressOptions(ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeRestartingSteam")));
+            }
+            else
+            {
+                ok = _playtimeService.SetSteamPlaytime(game, totalMinutes, out error, out steamStillRunning);
+            }
+
+            if (ok)
+            {
+                ulong hours = totalMinutes / 60UL;
+                ulong mins = totalMinutes % 60UL;
+                string message = string.Format(
+                    ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeDone"),
+                    game.Name,
+                    hours,
+                    mins,
+                    totalMinutes);
+
+                if (steamStillRunning)
+                    message += ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeRestartSteam");
+
+                PlayniteApi.Dialogs.ShowMessage(message, title);
+            }
+            else
+            {
+                PlayniteApi.Dialogs.ShowErrorMessage(
+                    string.Format(ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeFailed"), error),
+                    title);
+            }
+        }
+
+        private bool PromptHoursMinutesDialog(string gameName, string title, ulong initialMinutes, out ulong totalMinutes)
+        {
+            ulong resultMinutes = 0;
+            bool confirmed = false;
+
+            var window = PlayniteApi.Dialogs.CreateWindow(new WindowCreationOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false
+            });
+            window.Title = title;
+            window.SizeToContent = System.Windows.SizeToContent.WidthAndHeight;
+            window.ResizeMode = System.Windows.ResizeMode.NoResize;
+            window.WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner;
+            window.Owner = PlayniteApi.Dialogs.GetCurrentAppWindow();
+
+            var header = new System.Windows.Controls.TextBlock
+            {
+                Text = string.Format(ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimePrompt"), gameName),
+                Margin = new System.Windows.Thickness(0, 0, 0, 12),
+                TextWrapping = System.Windows.TextWrapping.Wrap,
+                MaxWidth = 340
+            };
+
+            var hoursLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeHoursLabel"),
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new System.Windows.Thickness(0, 0, 8, 0)
+            };
+
+            var hoursBox = new System.Windows.Controls.TextBox
+            {
+                Text = (initialMinutes / 60UL).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Width = 80,
+                Padding = new System.Windows.Thickness(6, 4, 6, 4),
+                Margin = new System.Windows.Thickness(0, 0, 16, 0)
+            };
+
+            var minutesLabel = new System.Windows.Controls.TextBlock
+            {
+                Text = ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeMinutesLabel"),
+                VerticalAlignment = System.Windows.VerticalAlignment.Center,
+                Margin = new System.Windows.Thickness(0, 0, 8, 0)
+            };
+
+            var minutesBox = new System.Windows.Controls.TextBox
+            {
+                Text = (initialMinutes % 60UL).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                Width = 60,
+                Padding = new System.Windows.Thickness(6, 4, 6, 4)
+            };
+
+            var inputsRow = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                Margin = new System.Windows.Thickness(0, 0, 0, 16)
+            };
+            inputsRow.Children.Add(hoursLabel);
+            inputsRow.Children.Add(hoursBox);
+            inputsRow.Children.Add(minutesLabel);
+            inputsRow.Children.Add(minutesBox);
+
+            var saveBtn = new System.Windows.Controls.Button
+            {
+                Content = ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeSave"),
+                IsDefault = true,
+                MinWidth = 85,
+                Padding = new System.Windows.Thickness(12, 5, 12, 5),
+                Margin = new System.Windows.Thickness(0, 0, 8, 0)
+            };
+            saveBtn.Click += (s, e) =>
+            {
+                if (!ulong.TryParse((hoursBox.Text ?? "").Trim(), out ulong h)
+                    || !ulong.TryParse((minutesBox.Text ?? "").Trim(), out ulong m)
+                    || m >= 60
+                    || h > 100000)
+                {
+                    PlayniteApi.Dialogs.ShowErrorMessage(ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeInvalid"), title);
+                    return;
+                }
+
+                resultMinutes = (h * 60UL) + m;
+                confirmed = true;
+                window.DialogResult = true;
+                window.Close();
+            };
+
+            var cancelBtn = new System.Windows.Controls.Button
+            {
+                Content = ResourceProvider.GetString("LOCLocalAchievementsEditPlaytimeCancel"),
+                IsCancel = true,
+                MinWidth = 85,
+                Padding = new System.Windows.Thickness(12, 5, 12, 5)
+            };
+
+            var buttonsRow = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+            };
+            buttonsRow.Children.Add(saveBtn);
+            buttonsRow.Children.Add(cancelBtn);
+
+            var root = new System.Windows.Controls.StackPanel
+            {
+                Margin = new System.Windows.Thickness(18)
+            };
+            root.Children.Add(header);
+            root.Children.Add(inputsRow);
+            root.Children.Add(buttonsRow);
+
+            window.Content = root;
+            window.Loaded += (s, e) =>
+            {
+                hoursBox.Focus();
+                hoursBox.SelectAll();
+            };
+
+            window.ShowDialog();
+            totalMinutes = resultMinutes;
+            return confirmed;
         }
 
         private void SyncAchievementsFromMenu(GameMenuItemActionArgs context)
